@@ -79,6 +79,7 @@ get_time_usec()
  * Modifies a mavlink_set_position_target_local_ned_t struct with target XYZ locations
  * in the Local NED frame, in meters.
  */
+
 void
 set_position(float x, float y, float z, mavlink_set_position_target_local_ned_t &sp)
 {
@@ -226,6 +227,34 @@ update_setpoint(mavlink_set_position_target_local_ned_t setpoint)
 	current_setpoint = setpoint;
 }
 
+void
+Autopilot_Interface::
+update_manual_control(int16_t x, int16_t y, int16_t z, int16_t r)
+{
+  current_control.x = x;
+  current_control.y = y;
+  current_control.z = z;
+  current_control.r = r;
+}
+
+int
+Autopilot_Interface::
+send_position_observed(float x, float y, float z,
+    float roll, float pitch, float yaw)
+{
+  mavlink_vision_position_estimate_t vp;
+  vp.usec = get_time_usec();
+  vp.x = x;
+  vp.y = y;
+  vp.z = z;
+  vp.roll = roll;
+  vp.pitch = pitch;
+  vp.yaw = yaw;
+  mavlink_message_t message;
+  mavlink_msg_vision_position_estimate_encode(system_id, autopilot_id, &message, &vp);
+  int ret = write_message(message);
+  return ret;
+}
 
 // ------------------------------------------------------------------------------
 //   Read Messages
@@ -447,6 +476,48 @@ write_setpoint()
 	return;
 }
 
+
+// ------------------------------------------------------------------------------
+//   Write Control Message
+// ------------------------------------------------------------------------------
+void
+Autopilot_Interface::
+write_control()
+{
+	// --------------------------------------------------------------------------
+	//   PACK PAYLOAD
+	// --------------------------------------------------------------------------
+
+	// pull from position target
+	mavlink_manual_control_t mc = current_control;
+
+	// double check some system parameters
+	mc.target = system_id;
+
+
+	// --------------------------------------------------------------------------
+	//   ENCODE
+	// --------------------------------------------------------------------------
+
+	mavlink_message_t message;
+  mavlink_msg_manual_control_encode(system_id, autopilot_id, &message, &mc);
+
+
+	// --------------------------------------------------------------------------
+	//   WRITE
+	// --------------------------------------------------------------------------
+
+	// do the write
+	int len = write_message(message);
+
+	// check the write
+	if ( not len > 0 )
+		fprintf(stderr,"WARNING: could not send POSITION_TARGET_LOCAL_NED \n");
+	//	else
+	//		printf("%lu POSITION_TARGET  = [ %f , %f , %f ] \n", write_count, position_target.x, position_target.y, position_target.z);
+
+	return;
+}
 
 // ------------------------------------------------------------------------------
 //   Start Off-Board Mode
@@ -799,28 +870,44 @@ write_thread(void)
 	writing_status = 2;
 
 	// prepare an initial setpoint, just stay put
-	mavlink_set_position_target_local_ned_t sp;
-	sp.type_mask = MAVLINK_MSG_SET_POSITION_TARGET_LOCAL_NED_VELOCITY &
-				   MAVLINK_MSG_SET_POSITION_TARGET_LOCAL_NED_YAW_RATE;
-	sp.coordinate_frame = MAV_FRAME_LOCAL_NED;
-	sp.vx       = 0.0;
-	sp.vy       = 0.0;
-	sp.vz       = 0.0;
-	sp.yaw_rate = 0.0;
+	// mavlink_set_position_target_local_ned_t sp;
+	// sp.type_mask = MAVLINK_MSG_SET_POSITION_TARGET_LOCAL_NED_VELOCITY &
+					 // MAVLINK_MSG_SET_POSITION_TARGET_LOCAL_NED_YAW_RATE;
+	// sp.coordinate_frame = MAV_FRAME_LOCAL_NED;
+	// sp.vx       = 0.0;
+	// sp.vy       = 0.0;
+	// sp.vz       = 0.0;
+	// sp.yaw_rate = 0.0;
+
+	// // set position target
+	// current_setpoint = sp;
+
+	// // write a message and signal writing
+	// write_setpoint();
+
+	// prepare an initial control, just stay put
+  mavlink_manual_control_t mc;
+  mc.x = 0;
+  mc.y = 0;
+  mc.z = 0;
+  mc.r = 0;
+  mc.buttons = 0;
 
 	// set position target
-	current_setpoint = sp;
+	current_control = mc;
 
 	// write a message and signal writing
-	write_setpoint();
+	// write_control();
+
 	writing_status = true;
 
 	// Pixhawk needs to see off-board commands at minimum 2Hz,
 	// otherwise it will go into fail safe
 	while ( not time_to_exit )
 	{
+		// write_setpoint();
+		// write_control();
 		usleep(250000);   // Stream at 4Hz
-		write_setpoint();
 	}
 
 	// signal end

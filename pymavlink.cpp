@@ -1,64 +1,50 @@
-/****************************************************************************
- *
- *   Copyright (c) 2014 MAVlink Development Team. All rights reserved.
- *   Author: Trent Lukaczyk, <aerialhedgehog@gmail.com>
- *           Jaycee Lock,    <jaycee.lock@gmail.com>
- *           Lorenz Meier,   <lm@inf.ethz.ch>
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- * 3. Neither the name PX4 nor the names of its contributors may be
- *    used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
- * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
- * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- *
- ****************************************************************************/
+#include <Python.h>
 
-/**
- * @file mavlink_control.cpp
- *
- * @brief An example offboard control process via mavlink
- *
- * This process connects an external MAVLink UART device to send an receive data
- *
- * @author Trent Lukaczyk, <aerialhedgehog@gmail.com>
- * @author Jaycee Lock,    <jaycee.lock@gmail.com>
- * @author Lorenz Meier,   <lm@inf.ethz.ch>
- *
- */
+#include <iostream>
+#include <stdio.h>
+#include <cstdlib>
+#include <unistd.h>
+#include <cmath>
+#include <string.h>
+#include <inttypes.h>
+#include <fstream>
+#include <signal.h>
+#include <time.h>
+#include <sys/time.h>
 
+#include <common/mavlink.h>
 
+#include "autopilot_interface.h"
+#include "serial_port.h"
 
-// ------------------------------------------------------------------------------
-//   Includes
-// ------------------------------------------------------------------------------
-
-#include "mavlink_control.h"
-
+using namespace std;
 
 // ------------------------------------------------------------------------------
 //   TOP
 // ------------------------------------------------------------------------------
+
+static PyObject*
+pymavlink_connect(PyObject *self, PyObject *args)
+{
+  const char *uart_name = "/dev/ttyUSB0";
+	int baudrate = 57600;
+  if (!PyArg_ParseTuple(args, "si", &uart_name, &baudrate))
+    return NULL;
+	Serial_Port serial_port(uart_name, baudrate);
+	Autopilot_Interface api(&serial_port);
+
+	serial_port.start();
+	api.start();
+	api.enable_offboard_control();
+
+}
+
+static PyObject*
+pymavlink_set_position(PyObject *self, PyObject *args)
+{
+
+}
+
 int
 top (int argc, char **argv)
 {
@@ -172,7 +158,7 @@ commands(Autopilot_Interface &api)
 	//   START OFFBOARD MODE
 	// --------------------------------------------------------------------------
 
-	// api.enable_offboard_control();
+	api.enable_offboard_control();
 	usleep(100); // give some time to let it sink in
 
 	// now the autopilot is accepting setpoint commands
@@ -181,11 +167,11 @@ commands(Autopilot_Interface &api)
 	// --------------------------------------------------------------------------
 	//   SEND OFFBOARD COMMANDS
 	// --------------------------------------------------------------------------
-	// printf("SEND OFFBOARD COMMANDS\n");
+	printf("SEND OFFBOARD COMMANDS\n");
 
 	// initialize command data strtuctures
-	// mavlink_set_position_target_local_ned_t sp;
-	// mavlink_set_position_target_local_ned_t ip = api.initial_position;
+	mavlink_set_position_target_local_ned_t sp;
+	mavlink_set_position_target_local_ned_t ip = api.initial_position;
 
 	// autopilot_interface.h provides some helper functions to build the command
 
@@ -197,53 +183,38 @@ commands(Autopilot_Interface &api)
 //				   sp        );
 
 	// Example 2 - Set Position
-	 // set_position( ip.x - 5.0 , // [m]
-						// ip.y - 5.0 , // [m]
-					 // ip.z       , // [m]
-					 // sp         );
+	 set_position( ip.x - 5.0 , // [m]
+			 	   ip.y - 5.0 , // [m]
+				   ip.z       , // [m]
+				   sp         );
 
 
 	// Example 1.2 - Append Yaw Command
-	// set_yaw( ip.yaw , // [rad]
-			 // sp     );
+	set_yaw( ip.yaw , // [rad]
+			 sp     );
 
 	// SEND THE COMMAND
-	// api.update_setpoint(sp);
+	api.update_setpoint(sp);
 	// NOW pixhawk will try to move
 
 	// Wait for 8 seconds, check position
-	// for (int i=0; i < 8; i++)
-	// {
-		// mavlink_local_position_ned_t pos = api.current_messages.local_position_ned;
-		// printf("%i CURRENT POSITION XYZ = [ % .4f , % .4f , % .4f ] \n", i, pos.x, pos.y, pos.z);
-		// sleep(1);
-	// }
+	for (int i=0; i < 8; i++)
+	{
+		mavlink_local_position_ned_t pos = api.current_messages.local_position_ned;
+		printf("%i CURRENT POSITION XYZ = [ % .4f , % .4f , % .4f ] \n", i, pos.x, pos.y, pos.z);
+		sleep(1);
+	}
 
-	// printf("\n");
+	printf("\n");
 
 
 	// --------------------------------------------------------------------------
 	//   STOP OFFBOARD MODE
 	// --------------------------------------------------------------------------
 
-	// api.disable_offboard_control();
+	api.disable_offboard_control();
 
 	// now pixhawk isn't listening to setpoint commands
-	for (int i=0; i < 10000; i++)
-	{
-    float alpha = i * 0.1f;
-    int ret = api.send_position_observed(alpha, alpha, alpha, 0, 0, 0);
-    printf("POSITON OBSERVED SENDED, RETURN: %d, pos: %.3f\n", ret, alpha);
-		usleep(100000);
-	}
-	// for (int i=0; i < 1000; i++)
-	// {
-    // int alpha = 200;
-    // int ret = api.send_position_observed(alpha, alpha, alpha, 0, 0, 0);
-    // printf("POSITON OBSERVED SENDED, RETURN: %d\n", ret);
-		// sleep(0.2);
-	// }
-  sleep(1);
 
 
 	// --------------------------------------------------------------------------
@@ -339,10 +310,6 @@ parse_commandline(int argc, char **argv, char *&uart_name, int &baudrate)
 void
 quit_handler( int sig )
 {
-	printf("\n");
-	printf("TERMINATING AT USER REQUEST\n");
-	printf("\n");
-
 	// autopilot interface
 	try {
 		autopilot_interface_quit->handle_quit(sig);
@@ -354,9 +321,6 @@ quit_handler( int sig )
 		serial_port_quit->handle_quit(sig);
 	}
 	catch (int error){}
-
-	// end program here
-	exit(0);
 
 }
 

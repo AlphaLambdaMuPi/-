@@ -248,9 +248,9 @@ public:
 	char reading_status;
 	char writing_status;
 	char control_status;
-    uint64_t write_count;
+  uint64_t write_count;
 
-    int system_id;
+  int system_id;
 	int autopilot_id;
 	int companion_id;
 
@@ -258,8 +258,11 @@ public:
 	mavlink_set_position_target_local_ned_t initial_position;
 
 	void update_setpoint(mavlink_set_position_target_local_ned_t setpoint);
+	void update_manual_control(int16_t x, int16_t y, int16_t z, int16_t r);
+	int send_position_observed(float x, float y, float z,
+      float roll, float pitch, float yaw);
 	void read_messages();
-	int  write_message(mavlink_message_t message);
+	int write_message(mavlink_message_t message);
 
 	void enable_offboard_control();
 	void disable_offboard_control();
@@ -283,12 +286,14 @@ private:
 	pthread_t write_tid;
 
 	mavlink_set_position_target_local_ned_t current_setpoint;
+	mavlink_manual_control_t current_control;
 
 	void read_thread();
 	void write_thread(void);
 
 	int toggle_offboard_control( bool flag );
 	void write_setpoint();
+	void write_control();
 
 };
 

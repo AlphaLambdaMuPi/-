@@ -239,7 +239,7 @@ update_manual_control(int16_t x, int16_t y, int16_t z, int16_t r)
 
 int
 Autopilot_Interface::
-send_position_observed(float x, float y, float z,
+send_position_estimated(float x, float y, float z,
     float roll, float pitch, float yaw)
 {
   mavlink_vision_position_estimate_t vp;

@@ -259,7 +259,7 @@ public:
 
 	void update_setpoint(mavlink_set_position_target_local_ned_t setpoint);
 	void update_manual_control(int16_t x, int16_t y, int16_t z, int16_t r);
-	int send_position_observed(float x, float y, float z,
+	int send_position_estimated(float x, float y, float z,
       float roll, float pitch, float yaw);
 	void read_messages();
 	int write_message(mavlink_message_t message);

@@ -123,7 +123,6 @@ read_message(mavlink_message_t &message)
 	// this function locks the port during read
 	int result = _read_port(cp);
 
-
 	// --------------------------------------------------------------------------
 	//   PARSE MESSAGE
 	// --------------------------------------------------------------------------

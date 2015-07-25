@@ -92,7 +92,7 @@ set_position(float x, float y, float z, mavlink_set_position_target_local_ned_t 
 	sp.y   = y;
 	sp.z   = z;
 
-	printf("POSITION SETPOINT XYZ = [ %.4f , %.4f , %.4f ] \n", sp.x, sp.y, sp.z);
+	fprintf(stderr, "POSITION SETPOINT XYZ = [ %.4f , %.4f , %.4f ] \n", sp.x, sp.y, sp.z);
 
 }
 
@@ -160,7 +160,7 @@ set_yaw(float yaw, mavlink_set_position_target_local_ned_t &sp)
 
 	sp.yaw  = yaw;
 
-	printf("POSITION SETPOINT YAW = %.4f \n", sp.yaw);
+	fprintf(stderr, "POSITION SETPOINT YAW = %.4f \n", sp.yaw);
 
 }
 
@@ -529,7 +529,7 @@ enable_offboard_control()
 	// Should only send this command once
 	if ( control_status == false )
 	{
-		printf("ENABLE OFFBOARD MODE\n");
+		fprintf(stderr, "ENABLE OFFBOARD MODE\n");
 
 		// ----------------------------------------------------------------------
 		//   TOGGLE OFF-BOARD MODE
@@ -547,8 +547,6 @@ enable_offboard_control()
 			//throw EXIT_FAILURE;
 		}
 
-		printf("\n");
-
 	} // end: if not offboard_status
 
 }
@@ -565,7 +563,7 @@ disable_offboard_control()
 	// Should only send this command once
 	if ( control_status == true )
 	{
-		printf("DISABLE OFFBOARD MODE\n");
+		fprintf(stderr, "DISABLE OFFBOARD MODE\n");
 
 		// ----------------------------------------------------------------------
 		//   TOGGLE OFF-BOARD MODE
@@ -582,8 +580,6 @@ disable_offboard_control()
 			fprintf(stderr,"Error: off-board mode not set, could not write message\n");
 			//throw EXIT_FAILURE;
 		}
-
-		printf("\n");
 
 	} // end: if offboard_status
 
@@ -641,20 +637,20 @@ start()
 	//   READ THREAD
 	// --------------------------------------------------------------------------
 
-	printf("START READ THREAD \n");
+	fprintf(stderr, "START READ THREAD \n");
 
 	result = pthread_create( &read_tid, NULL, &start_autopilot_interface_read_thread, this );
 	if ( result ) throw result;
 
 	// now we're reading messages
-	printf("\n");
+	fprintf(stderr, "\n");
 
 
 	// --------------------------------------------------------------------------
 	//   CHECK FOR MESSAGES
 	// --------------------------------------------------------------------------
 
-	printf("CHECK FOR MESSAGES\n");
+	fprintf(stderr, "CHECK FOR MESSAGES\n");
 
 	while ( not current_messages.sysid )
 	{
@@ -663,10 +659,10 @@ start()
 		usleep(500000); // check at 2Hz
 	}
 
-	printf("Found\n");
+	fprintf(stderr, "Found\n");
 
 	// now we know autopilot is sending messages
-	printf("\n");
+	fprintf(stderr, "\n");
 
 
 	// --------------------------------------------------------------------------
@@ -682,15 +678,15 @@ start()
 	if ( not system_id )
 	{
 		system_id = current_messages.sysid;
-		printf("GOT VEHICLE SYSTEM ID: %i\n", system_id );
+		fprintf(stderr, "GOT VEHICLE SYSTEM ID: %i\n", system_id );
 	}
 
 	// Component ID
 	if ( not autopilot_id )
 	{
 		autopilot_id = current_messages.compid;
-		printf("GOT AUTOPILOT COMPONENT ID: %i\n", autopilot_id);
-		printf("\n");
+		fprintf(stderr, "GOT AUTOPILOT COMPONENT ID: %i\n", autopilot_id);
+		fprintf(stderr, "\n");
 	}
 
 
@@ -718,9 +714,9 @@ start()
 	initial_position.yaw      = local_data.attitude.yaw;
 	initial_position.yaw_rate = local_data.attitude.yawspeed;
 
-	printf("INITIAL POSITION XYZ = [ %.4f , %.4f , %.4f ] \n", initial_position.x, initial_position.y, initial_position.z);
-	printf("INITIAL POSITION YAW = %.4f \n", initial_position.yaw);
-	printf("\n");
+	fprintf(stderr, "INITIAL POSITION XYZ = [ %.4f , %.4f , %.4f ] \n", initial_position.x, initial_position.y, initial_position.z);
+	fprintf(stderr, "INITIAL POSITION YAW = %.4f \n", initial_position.yaw);
+	fprintf(stderr, "\n");
 
 	// we need this before starting the write thread
 
@@ -728,17 +724,17 @@ start()
 	// --------------------------------------------------------------------------
 	//   WRITE THREAD
 	// --------------------------------------------------------------------------
-	printf("START WRITE THREAD \n");
+	//fprintf(stderr, "START WRITE THREAD \n");
 
-	result = pthread_create( &write_tid, NULL, &start_autopilot_interface_write_thread, this );
-	if ( result ) throw result;
+	// result = pthread_create( &write_tid, NULL, &start_autopilot_interface_write_thread, this );
+	// if ( result ) throw result;
 
 	// wait for it to be started
-	while ( not writing_status )
-		usleep(100000); // 10Hz
+	// while ( not writing_status )
+		// usleep(100000); // 10Hz
 
 	// now we're streaming setpoint commands
-	printf("\n");
+  fprintf(stderr, "\n");
 
 
 	// Done!
@@ -757,17 +753,17 @@ stop()
 	// --------------------------------------------------------------------------
 	//   CLOSE THREADS
 	// --------------------------------------------------------------------------
-	printf("CLOSE THREADS\n");
+	fprintf(stderr, "CLOSE THREADS\n");
 
 	// signal exit
 	time_to_exit = true;
 
 	// wait for exit
 	pthread_join(read_tid ,NULL);
-	pthread_join(write_tid,NULL);
+	// pthread_join(write_tid,NULL);
 
 	// now the read and write threads are closed
-	printf("\n");
+	fprintf(stderr, "\n");
 
 	// still need to close the serial_port separately
 }
@@ -824,7 +820,7 @@ Autopilot_Interface::
 handle_quit( int sig )
 {
 
-	disable_offboard_control();
+	// disable_offboard_control();
 
 	try {
 		stop();

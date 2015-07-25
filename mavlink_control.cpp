@@ -175,41 +175,40 @@ void print_sensors(Autopilot_Interface* api)
 
 	// hires imu
 	mavlink_highres_imu_t imu = messages.highres_imu;
-	printf("%lu\n", imu.time_usec);
+	printf("%llu\n", imu.time_usec);
 	printf("%f %f %f\n", imu.xacc, imu.yacc, imu.zacc);
 	printf("%f %f %f\n", imu.xgyro, imu.ygyro, imu.zgyro);
 	printf("%f %f %f\n", imu.xmag, imu.ymag, imu.zmag);
 	printf("%f\n", imu.pressure_alt);
-
-	printf("\n");
 }
 
 void
-commands(Autopilot_Interface &api)
-{
-
+commands(Autopilot_Interface &api) { 
 	// --------------------------------------------------------------------------
 	//   START OFFBOARD MODE
 	// --------------------------------------------------------------------------
 
 	// api.enable_offboard_control();
 	usleep(100); // give some time to let it sink in
+// now the autopilot is accepting setpoint commands
 
-	// now the autopilot is accepting setpoint commands
-
-  char cmd;
+  char cmd[10];
   float x, y, z, roll, pitch, yaw;
 
-  while (scanf("%c%*c", &cmd) != EOF) {
-    if (cmd == 'R') {
+  while (scanf("%s", cmd) != EOF) {
+    if (cmd[0] == 'R') {
       print_sensors(&api);
     }
-    else if (cmd == 'V') {
-      scanf("%f %f %f %f %f %f", &x, &y, &z, &roll, &pitch, &yaw);
-      int ret = api.send_position_estimated(x, y, z, roll, pitch, yaw);
-      printf("seted.%f, %f, %f, %f, %f, %f\n",
+    else if (cmd[0] == 'V') {
+      fprintf(stderr, "TEST\n");
+      scanf("%f%f%f%f%f%f", &x, &y, &z, &roll, &pitch, &yaw);
+      fprintf(stderr, "seted. %f, %f, %f, %f, %f, %f\n",
           x, y, z, roll, pitch, yaw);
+      int ret = api.send_position_estimated(x, y, z, roll, pitch, yaw);
+      fprintf(stderr, "TEST\n");
     }
+    else if (cmd[0] == 'E')
+      break;
   }
 
 	// --------------------------------------------------------------------------

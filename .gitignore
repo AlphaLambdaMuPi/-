@@ -12,6 +12,7 @@ build/
 *.o
 *.d
 mavlink_control
+mavlink_control_old
 
 # mac
 .DS_Store

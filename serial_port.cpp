@@ -99,7 +99,7 @@ initialize_defaults()
 	int result = pthread_mutex_init(&lock, NULL);
 	if ( result != 0 )
 	{
-		printf("\n mutex init failed\n");
+		fprintf(stderr, "\n mutex init failed\n");
 		throw 1;
 	}
 }
@@ -134,7 +134,7 @@ read_message(mavlink_message_t &message)
 		// check for dropped packets
 		if ( (lastStatus.packet_rx_drop_count != status.packet_rx_drop_count) && debug )
 		{
-			printf("ERROR: DROPPED %d PACKETS\n", status.packet_rx_drop_count);
+			fprintf(stderr, "ERROR: DROPPED %d PACKETS\n", status.packet_rx_drop_count);
 			unsigned char v=cp;
 			fprintf(stderr,"%02x ", v);
 		}
@@ -153,7 +153,7 @@ read_message(mavlink_message_t &message)
 	if(msgReceived && debug)
 	{
 		// Report info
-		printf("Received message from serial with ID #%d (sys:%d|comp:%d):\n", message.msgid, message.sysid, message.compid);
+		fprintf(stderr, "Received message from serial with ID #%d (sys:%d|comp:%d):\n", message.msgid, message.sysid, message.compid);
 
 		fprintf(stderr,"Received serial data: ");
 		unsigned int i;
@@ -217,14 +217,14 @@ open_serial()
 	// --------------------------------------------------------------------------
 	//   OPEN PORT
 	// --------------------------------------------------------------------------
-	printf("OPEN PORT\n");
+	fprintf(stderr, "OPEN PORT\n");
 
 	fd = _open_port(uart_name);
 
 	// Check success
 	if (fd == -1)
 	{
-		printf("failure, could not open port.\n");
+		fprintf(stderr, "failure, could not open port.\n");
 		throw EXIT_FAILURE;
 	}
 
@@ -238,24 +238,24 @@ open_serial()
 	// --------------------------------------------------------------------------
 	if (!success)
 	{
-		printf("failure, could not configure port.\n");
+		fprintf(stderr, "failure, could not configure port.\n");
 		throw EXIT_FAILURE;
 	}
 	if (fd <= 0)
 	{
-		printf("Connection attempt to port %s with %d baud, 8N1 failed, exiting.\n", uart_name, baudrate);
+		fprintf(stderr, "Connection attempt to port %s with %d baud, 8N1 failed, exiting.\n", uart_name, baudrate);
 		throw EXIT_FAILURE;
 	}
 
 	// --------------------------------------------------------------------------
 	//   CONNECTED!
 	// --------------------------------------------------------------------------
-	printf("Connected to %s with %d baud, 8 data bits, no parity, 1 stop bit (8N1)\n", uart_name, baudrate);
+	fprintf(stderr, "Connected to %s with %d baud, 8 data bits, no parity, 1 stop bit (8N1)\n", uart_name, baudrate);
 	lastStatus.packet_rx_drop_count = 0;
 
 	status = true;
 
-	printf("\n");
+	fprintf(stderr, "\n");
 
 	return;
 
@@ -269,7 +269,7 @@ void
 Serial_Port::
 close_serial()
 {
-	printf("CLOSE PORT\n");
+	fprintf(stderr, "CLOSE PORT\n");
 
 	int result = close(fd);
 
@@ -280,7 +280,7 @@ close_serial()
 
 	status = false;
 
-	printf("\n");
+	fprintf(stderr, "\n");
 
 }
 

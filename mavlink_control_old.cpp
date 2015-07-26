@@ -159,6 +159,25 @@ top (int argc, char **argv)
 
 }
 
+void print_sensors(Autopilot_Interface* api)
+{
+	// copy current messages
+	Mavlink_Messages messages = api->current_messages;
+
+	// local position in ned frame
+	mavlink_local_position_ned_t pos = messages.local_position_ned;
+	printf("pos: %f %f %f\n", pos.x, pos.y, pos.z);
+
+	// hires imu
+	mavlink_highres_imu_t imu = messages.highres_imu;
+	printf("time: %llu\n", imu.time_usec);
+	printf("acc: %f %f %f\n", imu.xacc, imu.yacc, imu.zacc);
+	printf("gyro: %f %f %f\n", imu.xgyro, imu.ygyro, imu.zgyro);
+	printf("mag: %f %f %f\n", imu.xmag, imu.ymag, imu.zmag);
+	printf("alt: %f\n", imu.pressure_alt);
+  fflush(stdout);
+}
+
 
 // ------------------------------------------------------------------------------
 //   COMMANDS
@@ -231,9 +250,9 @@ commands(Autopilot_Interface &api)
 	// now pixhawk isn't listening to setpoint commands
 	for (int i=0; i < 10000; i++)
 	{
-    float alpha = i * 0.1f;
+    float alpha = 10000;
     int ret = api.send_position_estimated(alpha, alpha, alpha, 0, 0, 0);
-    printf("POSITON OBSERVED SENDED, RETURN: %d, pos: %.3f\n", ret, alpha);
+    print_sensors(&api);
 		usleep(100000);
 	}
 	// for (int i=0; i < 1000; i++)

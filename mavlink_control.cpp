@@ -127,6 +127,8 @@ top (int argc, char **argv)
 	 */
 	serial_port.start();
 	autopilot_interface.start();
+  printf("CONNECTED\n");
+  fflush(stdout);
 
 
 	// --------------------------------------------------------------------------
@@ -180,6 +182,7 @@ void print_sensors(Autopilot_Interface* api)
 	printf("%f %f %f\n", imu.xgyro, imu.ygyro, imu.zgyro);
 	printf("%f %f %f\n", imu.xmag, imu.ymag, imu.zmag);
 	printf("%f\n", imu.pressure_alt);
+  fflush(stdout);
 }
 
 void
@@ -190,7 +193,6 @@ commands(Autopilot_Interface &api) {
 
 	// api.enable_offboard_control();
 	usleep(100); // give some time to let it sink in
-// now the autopilot is accepting setpoint commands
 
   char cmd[10];
   float x, y, z, roll, pitch, yaw;
